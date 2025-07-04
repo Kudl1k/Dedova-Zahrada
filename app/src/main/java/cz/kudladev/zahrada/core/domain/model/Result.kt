@@ -1,8 +1,8 @@
-package cz.kudladev.zahrada.core.domain
+package cz.kudladev.zahrada.core.domain.model
 
 sealed interface Result<out D, out E: Error> {
     data class Success<out D>(val data: D): Result<D, Nothing>
-    data class Error<out E: cz.kudladev.zahrada.core.domain.Error>(val error: E):
+    data class Error<out E: cz.kudladev.zahrada.core.domain.model.Error>(val error: E):
         Result<Nothing, E>
 }
 

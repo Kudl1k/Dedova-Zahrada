@@ -1,4 +1,4 @@
-package cz.kudladev.zahrada.core.domain
+package cz.kudladev.zahrada.core.domain.model
 
 sealed interface DataError: Error {
     enum class Remote: DataError {

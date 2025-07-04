@@ -3,13 +3,11 @@ package cz.kudladev.zahrada.core.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kudladev.zahrada.core.domain.GardenRepository
-import cz.kudladev.zahrada.core.domain.formatToTime
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import cz.kudladev.zahrada.core.domain.model.formatToTime
+import cz.kudladev.zahrada.core.domain.model.onError
+import cz.kudladev.zahrada.core.domain.model.onSuccess
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import java.time.Instant
@@ -22,10 +20,9 @@ class GardenViewModel(
     private val _state = MutableStateFlow(GardenState())
     val state = _state
         .onStart {
-            if (_state.value.data.isEmpty()) {
-                fetchDataOnce()
-            }
-            gardenRepository.fetchData()
+            _state.update { it.copy(gardenData = GardenOfflineState.Loading) }
+            loadGardenData(limit = _state.value.loadNext, selectedDate = _state.value.selectedDate)
+            fetchOnlineGardenData()
         }
         .stateIn(
             viewModelScope,
@@ -35,6 +32,7 @@ class GardenViewModel(
 
     private var isFetchingData = false
 
+
     fun onEvent(event: GardenEvent) {
         when(event) {
             GardenEvent.LoadMore -> {
@@ -43,18 +41,10 @@ class GardenViewModel(
                         loadNext = _state.value.loadNext + 100
                     )
                 }
-                fetchDataOnce()
+                loadGardenData(limit = _state.value.loadNext, selectedDate = _state.value.selectedDate)
             }
             GardenEvent.Refresh -> {
-                viewModelScope.launch {
-                    _state.update { it.copy(
-                        isLoading = true
-                    ) }
-                    gardenRepository.fetchData()
-                    _state.update { it.copy(
-                        isLoading = false
-                    ) }
-                }
+                fetchOnlineGardenData()
             }
 
             is GardenEvent.SelectDialogDialog -> {
@@ -71,13 +61,13 @@ class GardenViewModel(
                     _state.update {
                         it.copy(
                             selectedDate = null,
-                            temperatureData = null,
-                            humidityData = null,
-                            voltageData = null,
+                            temperatureData = GardenChartState.NotSelected,
+                            humidityData = GardenChartState.NotSelected,
+                            voltageData = GardenChartState.NotSelected,
                             loadNext = 100,
                         )
                     }
-                    fetchDataOnce()
+                    loadGardenData(limit = _state.value.loadNext, selectedDate = selectedDateMillis)
                     return
                 }
                 val localDateTime = Instant.ofEpochMilli(selectedDateMillis).atZone(ZoneOffset.UTC).toLocalDateTime()
@@ -87,7 +77,7 @@ class GardenViewModel(
                         loadNext = 1000
                     )
                 }
-                fetchDataOnce()
+                loadGardenData(limit = _state.value.loadNext, selectedDate = _state.value.selectedDate)
             }
 
             is GardenEvent.SelectStation -> {
@@ -99,13 +89,51 @@ class GardenViewModel(
                         }
                     )
                 }
+                if (_state.value.selectedStation == null){
+                    _state.update { it.copy(
+                        temperatureData = GardenChartState.NotSelected,
+                        humidityData = GardenChartState.NotSelected,
+                        voltageData = GardenChartState.NotSelected
+                    ) }
+                } else {
+                    setChart()
+                }
             }
 
             GardenEvent.ShowChart -> {
-                val data = _state.value.data
+                setChart()
+            }
+
+            GardenEvent.HideChart -> {
+                _state.update {
+                    it.copy(
+                        temperatureData = GardenChartState.NotSelected
+                    )
+                }
+            }
+        }
+    }
+
+    private fun setChart() {
+        when (_state.value.gardenData) {
+            is GardenOfflineState.Error -> {
+
+            }
+
+            GardenOfflineState.Loading -> {
+
+            }
+
+            is GardenOfflineState.Success -> {
+                val data = (_state.value.gardenData as GardenOfflineState.Success).data
                 if (_state.value.selectedStation in 1..4) {
+                    _state.update { it.copy(
+                        temperatureData = GardenChartState.Loading,
+                        humidityData = GardenChartState.Loading,
+                        voltageData = GardenChartState.NotSelected
+                    ) }
                     val temperatureData = data.map { record ->
-                        record.dateTime.formatToTime() to when (_state.value.selectedStation) {
+                        record.dateTime to when (_state.value.selectedStation) {
                             1 -> if (record.temperature1 == "N/A") 0f else record.temperature1.replace(
                                 ",",
                                 "."
@@ -130,7 +158,7 @@ class GardenViewModel(
                         }
                     }.unzip()
                     val humidityData = data.map { record ->
-                        record.dateTime.formatToTime() to when (_state.value.selectedStation) {
+                        record.dateTime to when (_state.value.selectedStation) {
                             1 -> if (record.humidity1 == "N/A") 0f else record.humidity1.replace(
                                 ",",
                                 "."
@@ -156,45 +184,84 @@ class GardenViewModel(
                     }.unzip()
                     _state.update {
                         it.copy(
-                            temperatureData = Pair(temperatureData.first.reversed(), temperatureData.second.mapIndexed { index, value -> index to value }.reversed()),
-                            humidityData = Pair(humidityData.first.reversed(), humidityData.second.mapIndexed { index, value -> index to value }.reversed()),
-                            voltageData = null
+                            temperatureData = GardenChartState.Success(
+                                Pair(
+                                    temperatureData.first.reversed(),
+                                    temperatureData.second.mapIndexed { index, value -> index to value }.reversed()
+                                )
+                            ),
+                            humidityData = GardenChartState.Success(
+                                Pair(
+                                    humidityData.first.reversed(),
+                                    humidityData.second.mapIndexed { index, value -> index to value }.reversed()
+                                )
+                            ),
+                            voltageData = GardenChartState.NotSelected
                         )
                     }
                 } else if (_state.value.selectedStation == 5) {
+                    _state.update { it.copy(
+                        temperatureData = GardenChartState.NotSelected,
+                        humidityData = GardenChartState.NotSelected,
+                        voltageData = GardenChartState.Loading
+                    ) }
                     val voltageData = data.map { record ->
-                        record.dateTime.formatToTime() to if (record.voltage == "N/A") 0f else record.voltage.replace(
+                        record.dateTime to if (record.voltage == "N/A") 0f else record.voltage.replace(
                             ",",
                             "."
                         ).toFloat()
                     }.unzip()
                     _state.update {
                         it.copy(
-                            temperatureData = null,
-                            humidityData = null,
-                            voltageData = Pair(voltageData.first.reversed(), voltageData.second.mapIndexed { index, value -> index to value }.reversed())
+                            temperatureData = GardenChartState.NotSelected,
+                            humidityData = GardenChartState.NotSelected,
+                            voltageData = GardenChartState.Success(
+                                Pair(
+                                    voltageData.first.reversed(),
+                                    voltageData.second.mapIndexed { index, value -> index to value }.reversed()
+                                )
+                            )
                         )
                     }
                 }
             }
+        }
+    }
 
-            GardenEvent.HideChart -> {
-                _state.update {
-                    it.copy(
-                        temperatureData = null
-                    )
+    private var gardenDataJob: Job? = null
+
+    private fun loadGardenData(limit: Int? = null, offset: Int? = null, selectedDate: LocalDateTime? = null) {
+        gardenDataJob?.cancel()
+
+        gardenDataJob = viewModelScope.launch {
+            gardenRepository.getGardenData(limit, offset, selectedDate)
+                .collect { records ->
+                    _state.update { it.copy(
+                        gardenData = GardenOfflineState.Success(records)
+                    ) }
+
+                    if (_state.value.selectedStation != null) {
+                        setChart()
+                    }
                 }
-            }
         }
     }
 
-    private fun fetchDataOnce() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            val latestData = gardenRepository.getGardenData(limit = _state.value.loadNext, selectedDate = _state.value.selectedDate).first() // Get latest data after fetching
-            println("Data fetched: $latestData")
-            _state.update { it.copy(data = latestData, isLoading = false) }
-            println("Data updated")
-        }
+    private fun fetchOnlineGardenData() = viewModelScope.launch {
+        _state.update { it.copy(onlineState = GardenOnlineState.Loading) }
+        gardenRepository
+            .fetchData()
+            .onSuccess {
+                _state.update { it.copy(
+                    onlineState = GardenOnlineState.Success
+                ) }
+            }
+            .onError { error ->
+                _state.update { it.copy(
+                    onlineState = GardenOnlineState.Error(error)
+                ) }
+            }
     }
+
+
 }

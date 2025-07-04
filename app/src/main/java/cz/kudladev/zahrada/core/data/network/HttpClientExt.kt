@@ -1,9 +1,9 @@
-package cz.kudladev.zahrada.core.data
+package cz.kudladev.zahrada.core.data.network
 
 
-import cz.kudladev.zahrada.core.domain.DataError
-import cz.kudladev.zahrada.core.domain.DetailedDataError
-import cz.kudladev.zahrada.core.domain.Result
+import cz.kudladev.zahrada.core.domain.model.DataError
+import cz.kudladev.zahrada.core.domain.model.DetailedDataError
+import cz.kudladev.zahrada.core.domain.model.Result
 import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.SocketTimeoutException

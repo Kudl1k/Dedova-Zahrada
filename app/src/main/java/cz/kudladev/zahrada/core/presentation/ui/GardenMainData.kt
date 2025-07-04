@@ -6,26 +6,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Button
-import androidx.compose.material3.DividerDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,9 +21,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cz.kudladev.zahrada.core.domain.GardenDataRecord
-import cz.kudladev.zahrada.core.domain.format
-import cz.kudladev.zahrada.core.domain.formatToMonth
+import cz.kudladev.zahrada.core.domain.model.GardenDataRecord
+import cz.kudladev.zahrada.core.domain.model.formatToMonth
 import cz.kudladev.zahrada.core.presentation.GardenEvent
 import kotlinx.datetime.LocalDateTime
 
@@ -47,7 +34,7 @@ fun LazyGridScope.GardenMainBody(
     onEvent: (GardenEvent) -> Unit
 ) {
     item(
-        span = { GridItemSpan(3) },
+        span = { GridItemSpan(2) },
         key = "header"
     ) {
         Row(
@@ -57,7 +44,7 @@ fun LazyGridScope.GardenMainBody(
         ) {
             Text(
                 text = "Historie",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -87,7 +74,7 @@ fun LazyGridScope.GardenMainBody(
                     },
                     label = {
                         Text(
-                        "Vybrat datum",
+                        "Vyberte datum",
                             overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                         )
@@ -95,6 +82,7 @@ fun LazyGridScope.GardenMainBody(
                     trailingIcon = {
                         Icon(Icons.Default.DateRange, contentDescription = "Select date")
                     },
+                    shape = MaterialTheme.shapes.medium,
                     readOnly = true,
                     modifier = Modifier
                         .width(200.dp)
@@ -115,8 +103,7 @@ fun LazyGridScope.GardenMainBody(
 
     items(
         data,
-        span = { GridItemSpan(3) },
-        key = { record -> record.dateTime.toString() }
+        span = { GridItemSpan(2) },
     ){ record ->
         GardenMainBodyRecord(
             record = record,
@@ -124,7 +111,7 @@ fun LazyGridScope.GardenMainBody(
         )
     }
 
-    item(span = { GridItemSpan(3) }) {
+    item(span = { GridItemSpan(2) }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -155,7 +142,7 @@ fun GardenMainBodyRecord(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = record.dateTime.format(),
+                text = record.dateTime,
                 modifier = Modifier.weight(2f),
                 style = MaterialTheme.typography.labelSmall,
                 overflow = TextOverflow.Ellipsis,

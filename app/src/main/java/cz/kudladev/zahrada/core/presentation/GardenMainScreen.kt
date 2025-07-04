@@ -1,16 +1,9 @@
 package cz.kudladev.zahrada.core.presentation
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,12 +12,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.kudladev.zahrada.core.presentation.ui.DatePickerModalInput
@@ -50,56 +42,47 @@ fun GardenMainScreen(
     state: GardenState,
     onEvent: (GardenEvent) -> Unit,
 ) {
-    val context = LocalContext.current
-
-    LaunchedEffect(state.isLoading) {
-        when(state.isLoading){
-            true -> Toast.makeText(context, "Načítání dat...", Toast.LENGTH_SHORT).show()
-            false -> Toast.makeText(context, "Data načtena", Toast.LENGTH_SHORT).show()
-            else -> {}
-        }
-    }
-
-    LaunchedEffect(state.selectedDate, state.selectedStation) {
-        if (state.selectedDate != null && state.selectedStation != null) {
-            onEvent(GardenEvent.ShowChart)
-        } else {
-            onEvent(GardenEvent.HideChart)
-        }
-    }
-
     val focusManager = LocalFocusManager.current
 
-
-    Scaffold(
+    PullToRefreshBox(
+        isRefreshing = state.gardenData is GardenOfflineState.Loading,
+        onRefresh = {
+            onEvent(GardenEvent.Refresh)
+        },
         modifier = Modifier.fillMaxSize(),
-    ) { innerPadding ->
-        AnimatedVisibility(
-            visible = state.isLoading == false,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            PullToRefreshBox(
-                isRefreshing = state.isLoading ?: false,
-                onRefresh = {
-                    onEvent(GardenEvent.Refresh)
-                },
-                modifier = Modifier.fillMaxSize(),
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            contentWindowInsets = WindowInsets
+                .displayCutout
+                .add(insets = WindowInsets.statusBars)
+                .add(insets = WindowInsets.navigationBars)
+        ) { innerPadding ->
+            val combinedPadding = PaddingValues(
+                start = innerPadding.calculateStartPadding(LayoutDirection.Ltr) + 16.dp,
+                end = innerPadding.calculateEndPadding(LayoutDirection.Ltr) + 16.dp,
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding()
+            )
+            LazyVerticalGrid(
+                modifier = Modifier
+                    .fillMaxSize(),
+                columns = GridCells.Fixed(2),
+                contentPadding = combinedPadding,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                LazyVerticalGrid(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    columns = GridCells.Fixed(3),
-                    contentPadding = WindowInsets.safeContent.asPaddingValues(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (state.data.isNotEmpty()) {
+                when (state.gardenData){
+                    is GardenOfflineState.Error -> {
+
+                    }
+                    GardenOfflineState.Loading -> {
+
+                    }
+                    is GardenOfflineState.Success -> {
                         GardenMainHeader(
-                            lastRecord = state.data.first(),
-                            isLoading = state.isLoading,
+                            lastRecord = state.gardenData.data.firstOrNull(),
+                            isLoading = state.onlineState is GardenOnlineState.Loading,
                             selectedStation = state.selectedStation,
                             temperatureData = state.temperatureData,
                             humidityData = state.humidityData,
@@ -109,7 +92,7 @@ fun GardenMainScreen(
                             }
                         )
                         GardenMainBody(
-                            data = state.data,
+                            data = state.gardenData.data,
                             selectedDate = state.selectedDate,
                             selectedStation = state.selectedStation,
                             onEvent = onEvent,
@@ -117,9 +100,6 @@ fun GardenMainScreen(
                                 focusManager.clearFocus()
                             }
                         )
-                    } else {
-                        Toast.makeText(context, "Žádná data", Toast.LENGTH_SHORT).show()
-                        onEvent(GardenEvent.SelectDate(null))
                     }
                 }
             }
@@ -138,22 +118,7 @@ fun GardenMainScreen(
                 }
             )
         }
-        AnimatedVisibility(
-            visible = state.isLoading == true,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                CircularProgressIndicator()
-                Text(
-                    text = "Načítám data...",
-                )
-            }
-        }
+
 
 
     }

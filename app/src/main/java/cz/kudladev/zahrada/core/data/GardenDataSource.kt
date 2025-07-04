@@ -1,7 +1,8 @@
 package cz.kudladev.zahrada.core.data
 
-import cz.kudladev.zahrada.core.domain.DetailedDataError
-import cz.kudladev.zahrada.core.domain.Result
+import cz.kudladev.zahrada.core.data.model.GardenDataRecordDTO
+import cz.kudladev.zahrada.core.domain.model.DetailedDataError
+import cz.kudladev.zahrada.core.domain.model.Result
 
 interface GardenDataSource {
 

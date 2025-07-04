@@ -1,10 +1,9 @@
-package cz.kudladev.zahrada.core.domain
+package cz.kudladev.zahrada.core.domain.model
 
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 
 data class GardenDataRecord(
-    val dateTime: LocalDateTime,
+    val dateTime: String,
     val temperature1: String = "N/A",
     val humidity1: String = "N/A",
     val temperature2: String = "N/A",

@@ -1,4 +1,4 @@
-package cz.kudladev.zahrada.core.data
+package cz.kudladev.zahrada.core.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine

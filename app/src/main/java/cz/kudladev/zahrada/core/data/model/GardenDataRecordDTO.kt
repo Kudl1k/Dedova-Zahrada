@@ -1,9 +1,10 @@
-package cz.kudladev.zahrada.core.data
+package cz.kudladev.zahrada.core.data.model
 
 import android.annotation.SuppressLint
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import cz.kudladev.zahrada.core.domain.GardenDataRecord
+import cz.kudladev.zahrada.core.domain.model.GardenDataRecord
+import cz.kudladev.zahrada.core.domain.model.format
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
@@ -40,7 +41,7 @@ data class GardenDataRecordDTOEntity(
 @SuppressLint("DefaultLocale")
 fun GardenDataRecordDTO.toGardenDataRecord(): GardenDataRecord{
     return GardenDataRecord(
-        dateTime = dateTime,
+        dateTime = dateTime.format(),
         temperature1 = temperature1.toFormattedString(),
         humidity1 = humidity1.toFormattedString(),
         temperature2 = temperature2.toFormattedString(),
@@ -49,7 +50,7 @@ fun GardenDataRecordDTO.toGardenDataRecord(): GardenDataRecord{
         humidity3 = humidity3.toFormattedString(),
         temperature4 = temperature4.toFormattedString(),
         humidity4 = humidity4.toFormattedString(),
-        voltage = voltage.toFormattedString(),
+        voltage = voltage.toVoltageString(),
     )
 }
 
@@ -57,6 +58,11 @@ fun GardenDataRecordDTO.toGardenDataRecord(): GardenDataRecord{
 fun Double?.toFormattedString(): String{
     if (this == null) return "N/A"
     return String.format("%.1f", this)
+}
+
+fun Double?.toVoltageString(): String {
+    if (this == null) return "N/A"
+    return this.toInt().toString()
 }
 
 fun GardenDataRecordDTO.toGardenDataRecordDTOEntity(): GardenDataRecordDTOEntity{

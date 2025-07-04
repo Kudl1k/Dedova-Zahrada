@@ -1,8 +1,10 @@
 package cz.kudladev.zahrada.core.data
 
-import cz.kudladev.zahrada.core.domain.DataError
-import cz.kudladev.zahrada.core.domain.DetailedDataError
-import cz.kudladev.zahrada.core.domain.Result
+import cz.kudladev.zahrada.core.data.model.GardenDataRecordDTO
+import cz.kudladev.zahrada.core.data.model.toGardenDataRecordDTOs
+import cz.kudladev.zahrada.core.domain.model.DataError
+import cz.kudladev.zahrada.core.domain.model.DetailedDataError
+import cz.kudladev.zahrada.core.domain.model.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.url
@@ -26,10 +28,10 @@ class KtorGardenDataSource(
                 Result.Success(response.bodyAsText().toGardenDataRecordDTOs().reversed())
             } catch (e: Exception) {
                 e.printStackTrace()
-                Result.Error(DetailedDataError.Remote(DataError.Remote.SERIALIZATION, null))
+                Result.Error(DetailedDataError.Remote(DataError.Remote.SERIALIZATION, "Problem při zpracování dat: ${e.message}"))
             }
         } else {
-            Result.Error(DetailedDataError.Remote(DataError.Remote.UNKNOWN, null))
+            Result.Error(DetailedDataError.Remote(DataError.Remote.UNKNOWN, "Nepodařilo se načíst data ze serveru, kód: ${response.status.value}"))
         }
     }
 }

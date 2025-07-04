@@ -3,7 +3,7 @@ package cz.kudladev.zahrada.di
 import androidx.room.Room
 import cz.kudladev.zahrada.core.data.GardenDataSource
 import cz.kudladev.zahrada.core.data.KtorGardenDataSource
-import cz.kudladev.zahrada.core.data.HttpClientFactory
+import cz.kudladev.zahrada.core.data.network.HttpClientFactory
 import cz.kudladev.zahrada.core.domain.GardenRepository
 import cz.kudladev.zahrada.core.data.DefaultGardenRepository
 import cz.kudladev.zahrada.core.data.database.GardenDatabase

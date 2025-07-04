@@ -3,7 +3,7 @@ package cz.kudladev.zahrada.core.data.database
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
-import cz.kudladev.zahrada.core.data.GardenDataRecordDTOEntity
+import cz.kudladev.zahrada.core.data.model.GardenDataRecordDTOEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
